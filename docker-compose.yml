@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  postgres-notificacoes:
+    image: postgres:15
+    container_name: postgres-notificacoes
+    ports:
+      - "5433:5432" # Rodando na porta 5433 para não dar conflito com o seu projeto anterior
+    environment:
+      POSTGRES_USER: gabriel
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: db_cadastro
+    volumes:
+      - pgdata_notificacoes:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-broker
+    ports:
+      - "5672:5672"   # Porta de comunicação interna do protocolo AMQP (onde o Java se conecta)
+      - "15672:15672" # Porta do painel visual do RabbitMQ (para acessarmos pelo navegador)
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  pgdata_notificacoes:
+  rabbitmq_data:
