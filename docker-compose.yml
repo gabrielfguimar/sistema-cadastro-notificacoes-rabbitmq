@@ -1,30 +1,60 @@
-version: '3.8'
-
 services:
-  postgres-notificacoes:
-    image: postgres:15
-    container_name: postgres-notificacoes
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: postgres-container
     ports:
-      - "5433:5432" # Rodando na porta 5433 para não dar conflito com o seu projeto anterior
+      - "5433:5432"
     environment:
-      POSTGRES_USER: gabriel
-      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
       POSTGRES_DB: db_cadastro
-    volumes:
-      - pgdata_notificacoes:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d db_cadastro"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq-broker
+    image: rabbitmq:4.0-management-alpine
+    container_name: rabbitmq-container
     ports:
-      - "5672:5672"   # Porta de comunicação interna do protocolo AMQP (onde o Java se conecta)
-      - "15672:15672" # Porta do painel visual do RabbitMQ (para acessarmos pelo navegador)
+      - "5672:5672"
+      - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - RABBITMQ_ERLANG_COOKIE=ChaveSecretaDoGabriel123
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-volumes:
-  pgdata_notificacoes:
-  rabbitmq_data:
+  api-cadastro:
+    build:
+      context: ./api-cadastro
+      dockerfile: Dockerfile
+    container_name: api-cadastro-container
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/db_cadastro
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: root
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres-db:
+        condition: service_healthy
+
+  ms-notificador:
+    build:
+      context: ./MS-NOTIFICADOR/ms-notificador
+      dockerfile: Dockerfile
+    container_name: ms-notificador-container
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
