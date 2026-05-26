@@ -14,8 +14,8 @@ graph LR
     Exchange --> Queue[usuarios.v1.cadastro-criado]
     Queue --> MS[ms-notificador]
     
-    subgraph Circuito de Resiliência (DLQ)
-        MS -->|Falha Crítica / 4 Retries| DLX[usuarios.v1.cadastro-exchange.dlq]
+    subgraph "Circuito de Resiliencia DLQ"
+        MS -->|Falha Critica / 4 Retries| DLX[usuarios.v1.cadastro-exchange.dlq]
         DLX --> DLQ[usuarios.v1.cadastro-criado.dlq]
-        DLQ --> ListenerDLQ[Listener de Contingência]
+        DLQ --> ListenerDLQ[Listener de Contingencia]
     end
